@@ -8,6 +8,7 @@
 
 - name: Detect package manager
   raw: |
+    bash --noprofile --norc -c '
     if command -v dnf5 >/dev/null 2>&1; then
       echo dnf5
     elif command -v dnf >/dev/null 2>&1; then
@@ -20,13 +21,17 @@
       echo zypper
     else
       echo unknown
-    fi
+    fi'
   register: pkg_mgr_check
   changed_when: false
 
 - name: Save package manager
   set_fact:
     bootstrap_pkg_mgr: "{{ pkg_mgr_check.stdout | trim }}"
+
+- name: Show package manager name
+  ansible.builtin.debug:
+    msg: "Package manager name: {{ bootstrap_pkg_mgr }}"
 
 - name: Check for packages
   include_tasks: "{{ bootstrap_pkg_mgr }}_check_and_install.yml"
