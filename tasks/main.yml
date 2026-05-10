@@ -6,25 +6,33 @@
   ansible.builtin.include_tasks: detect_sshd_port.yml
   when: ansible_connection | default("ssh") in ["ssh", "paramiko"]
 
-- name: Check if Python 3 is installed
-  raw: test -e /usr/bin/python3
-  register: python_check
+- name: Detect package manager
+  raw: |
+    if command -v dnf5 >/dev/null 2>&1; then
+      echo dnf5
+    elif command -v dnf >/dev/null 2>&1; then
+      echo dnf
+    elif command -v yum >/dev/null 2>&1; then
+      echo yum
+    elif command -v apt-get >/dev/null 2>&1; then
+      echo apt
+    elif command -v zypper >/dev/null 2>&1; then
+      echo zypper
+    else
+      echo unknown
+    fi
+  register: pkg_mgr_check
   changed_when: false
-  failed_when: false
 
-- name: Install dependencies for APT (Debian/Ubuntu)
-  raw: |
-    apt-get update -y && apt-get install -y python3 python3-apt
-  when:
-    - ansible_facts.os_family == "Debian"
-    - python_check.rc != 0
+- name: Save package manager
+  set_fact:
+    bootstrap_pkg_mgr: "{{ pkg_mgr_check.stdout | trim }}"
 
-- name: Install dependencies for DNF (RHEL/Fedora)
-  raw: |
-    dnf install -y python3 python3-libdnf
-  when:
-    - ansible_facts.os_family == "RedHat"
-    - python_check.rc != 0
+- name: Check for packages
+  include_tasks: "{{ bootstrap_pkg_mgr }}_check_and_install.yml"
+  loop: "{{ _bootstrap_packages[bootstrap_pkg_mgr] }}"
+  loop_control:
+    loop_var: package_name
 
 - name: Reset connection to use installed Python
   meta: reset_connection

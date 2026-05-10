@@ -1,3 +1,15 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # vars file for ansible-role-bootstrap
+_bootstrap_packages:
+  dnf5:
+    - python3
+    - python3-dnf
+    - python3-libdnf5
+  dnf: &dnf
+    - python3
+    - python-dnf
+  yum: *dnf
+  apt:
+    - python3
+    - python3-apt
