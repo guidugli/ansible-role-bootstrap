@@ -6,6 +6,7 @@
   failed_when: false
 
 - name: Install missing packages
+  become: yes
   raw: |
     apt-get update && apt-get install -y {{ package_name }}
   when:
