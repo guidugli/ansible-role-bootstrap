@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: all
+  gather_facts: false
+  become: no
+  vars:
+    bootstrap_detect_ssh_port: false
+  roles:
+    - role: guidugli.bootstrap

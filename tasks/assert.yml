@@ -1,0 +1,28 @@
+---
+# tasks/assert.yml
+# Extra validation for role options not fully covered by meta/argument_specs.yml.
+
+- name: Ensure bootstrap_extra_packages entries are non-empty strings
+  ansible.builtin.assert:
+    that:
+      - item is string
+      - item | length > 0
+    fail_msg: >-
+      Each entry in bootstrap_extra_packages must be a non-empty string. Invalid entry: {{ item }}
+    quiet: true
+  loop: "{{ bootstrap_extra_packages | default([]) }}"
+  when:
+    - bootstrap_extra_packages is defined
+    - bootstrap_extra_packages | length > 0
+
+- name: Ensure bootstrap_extra_packages does not include empty/whitespace-only values
+  ansible.builtin.assert:
+    that:
+      - (item | trim) | length > 0
+    fail_msg: >-
+      bootstrap_extra_packages contains an empty or whitespace-only value: {{ item | to_json }}
+    quiet: true
+  loop: "{{ bootstrap_extra_packages | default([]) }}"
+  when:
+    - bootstrap_extra_packages is defined
+    - bootstrap_extra_packages | length > 0

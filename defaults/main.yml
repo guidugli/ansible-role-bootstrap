@@ -1,3 +1,15 @@
-#SPDX-License-Identifier: MIT-0
 ---
-# defaults file for ansible-role-bootstrap
+# defaults file for bootstrap
+#
+# Install the minimum Python runtime and package-manager bindings required for
+# Ansible to manage a host. This role is intended for first-touch bootstrap
+# before regular module-based roles run.
+
+# Whether the role should attempt SSH port auto-detection before deferred fact gathering.
+bootstrap_detect_ssh_port: true
+
+# Whether the role should fail if no supported package manager is detected.
+bootstrap_fail_on_unknown_pkg_mgr: true
+
+# Additional packages to install after the backend-specific bootstrap package list.
+bootstrap_extra_packages: []

@@ -1,0 +1,11 @@
+# Ansible
+*.retry
+
+# Python
+.venv/
+*/__pycache__/
+*.pyc
+
+# Tool/cache dirs
+.cache/
+.molecule/

@@ -1,0 +1,27 @@
+---
+argument_specs:
+  main:
+    short_description: Bootstrap a host for Ansible management
+    description:
+      - Install the minimum Python runtime and package-manager bindings required for Ansible to manage a host.
+      - Optionally detect the SSH port before gathering facts on first-touch systems.
+    options:
+      bootstrap_detect_ssh_port:
+        type: bool
+        required: false
+        default: true
+        description:
+          - Whether the role should attempt SSH port auto-detection before deferred fact gathering.
+      bootstrap_fail_on_unknown_pkg_mgr:
+        type: bool
+        required: false
+        default: true
+        description:
+          - Whether the role should fail when no supported package manager is detected.
+      bootstrap_extra_packages:
+        type: list
+        elements: str
+        required: false
+        default: []
+        description:
+          - Additional packages to install after the backend-specific bootstrap packages.

@@ -1,0 +1,141 @@
+---
+- name: Verify bootstrap role
+  hosts: all
+  gather_facts: true
+  become: false
+
+  tasks:
+    - name: Assert supported package manager backend is detected during verify
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.get('pkg_mgr', '') in ['apt', 'dnf', 'dnf5', 'yum']
+        fail_msg: >-
+          Unsupported package manager in verify environment: {{ ansible_facts.get('pkg_mgr', 'unknown') }}
+        quiet: true
+
+    - name: Check python3 command is available
+      ansible.builtin.command:
+        argv:
+          - python3
+          - --version
+      register: bootstrap_python3
+      changed_when: false
+      failed_when: false
+
+    - name: Assert python3 is available after bootstrap
+      ansible.builtin.assert:
+        that:
+          - bootstrap_python3.rc == 0
+          - bootstrap_python3.stdout | length > 0 or bootstrap_python3.stderr | length > 0
+        fail_msg: python3 is not available after bootstrap.
+        quiet: true
+
+    - name: Check package-manager Python bindings on apt systems
+      ansible.builtin.command:
+        argv:
+          - dpkg-query
+          - -W
+          - -f=${Status}
+          - python3-apt
+      register: bootstrap_apt_py_pkg
+      changed_when: false
+      failed_when: false
+      when: ansible_facts.get('pkg_mgr', '') == 'apt'
+
+    - name: Assert python3-apt is installed on apt systems
+      ansible.builtin.assert:
+        that:
+          - bootstrap_apt_py_pkg.rc == 0
+          - "'install ok installed' in bootstrap_apt_py_pkg.stdout"
+        fail_msg: python3-apt is not installed on apt systems.
+        quiet: true
+      when: ansible_facts.get('pkg_mgr', '') == 'apt'
+
+    - name: Check package-manager Python bindings on dnf systems
+      ansible.builtin.command:
+        argv:
+          - rpm
+          - -q
+          - python-dnf
+      register: bootstrap_dnf_py_pkg
+      changed_when: false
+      failed_when: false
+      when: ansible_facts.get('pkg_mgr', '') in ['dnf', 'yum']
+
+    - name: Assert python-dnf is installed on dnf/yum systems
+      ansible.builtin.assert:
+        that:
+          - bootstrap_dnf_py_pkg.rc == 0
+        fail_msg: python-dnf is not installed on dnf/yum systems.
+        quiet: true
+      when: ansible_facts.get('pkg_mgr', '') in ['dnf', 'yum']
+
+    - name: Check package-manager Python bindings on dnf5 systems (python3-dnf)
+      ansible.builtin.command:
+        argv:
+          - rpm
+          - -q
+          - python3-dnf
+      register: bootstrap_dnf5_py_pkg
+      changed_when: false
+      failed_when: false
+      when: ansible_facts.get('pkg_mgr', '') == 'dnf5'
+
+    - name: Assert python3-dnf is installed on dnf5 systems
+      ansible.builtin.assert:
+        that:
+          - bootstrap_dnf5_py_pkg.rc == 0
+        fail_msg: python3-dnf is not installed on dnf5 systems.
+        quiet: true
+      when: ansible_facts.get('pkg_mgr', '') == 'dnf5'
+
+    - name: Check package-manager Python bindings on dnf5 systems (python3-libdnf5)
+      ansible.builtin.command:
+        argv:
+          - rpm
+          - -q
+          - python3-libdnf5
+      register: bootstrap_libdnf5_pkg
+      changed_when: false
+      failed_when: false
+      when: ansible_facts.get('pkg_mgr', '') == 'dnf5'
+
+    - name: Assert python3-libdnf5 is installed on dnf5 systems
+      ansible.builtin.assert:
+        that:
+          - bootstrap_libdnf5_pkg.rc == 0
+        fail_msg: python3-libdnf5 is not installed on dnf5 systems.
+        quiet: true
+      when: ansible_facts.get('pkg_mgr', '') == 'dnf5'
+
+    - name: Gather package facts after bootstrap
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Assert backend package list is present in package facts on apt systems
+      ansible.builtin.assert:
+        that:
+          - "'python3' in ansible_facts.packages"
+          - "'python3-apt' in ansible_facts.packages"
+        fail_msg: Expected bootstrap packages are missing from package facts on apt systems.
+        quiet: true
+      when: ansible_facts.get('pkg_mgr', '') == 'apt'
+
+    - name: Assert backend package list is present in package facts on dnf/yum systems
+      ansible.builtin.assert:
+        that:
+          - "'python3' in ansible_facts.packages"
+          - "'python-dnf' in ansible_facts.packages"
+        fail_msg: Expected bootstrap packages are missing from package facts on dnf/yum systems.
+        quiet: true
+      when: ansible_facts.get('pkg_mgr', '') in ['dnf', 'yum']
+
+    - name: Assert backend package list is present in package facts on dnf5 systems
+      ansible.builtin.assert:
+        that:
+          - "'python3' in ansible_facts.packages"
+          - "'python3-dnf' in ansible_facts.packages"
+          - "'python3-libdnf5' in ansible_facts.packages"
+        fail_msg: Expected bootstrap packages are missing from package facts on dnf5 systems.
+        quiet: true
+      when: ansible_facts.get('pkg_mgr', '') == 'dnf5'
