@@ -27,17 +27,17 @@
   ansible.builtin.wait_for:
     port: "22"
     state: "started"
-    host: '{{ (ansible_host|default(inventory_hostname))|default(ansible_ssh_host) }}'
+    host: '{{ (ansible_host | default(inventory_hostname)) | default(ansible_ssh_host) }}'
     connect_timeout: "5"
     timeout: "10"
   delegate_to: "localhost"
   ignore_errors: true
   register: default_ssh
 
-#- debug: var=inventory_hostname
-#- debug: var=ansible_ssh_host
-#- debug: var=ansible_host
-#- debug: var=default_ssh
+# - debug: var=inventory_hostname
+# - debug: var=ansible_ssh_host
+# - debug: var=ansible_host
+# - debug: var=default_ssh
 
 # If reachable, continue the following tasks with this port
 - name: Set inventory ansible_port to default
@@ -55,7 +55,7 @@
   ansible.builtin.wait_for:
     port: "{{ ansible_port }}"
     state: "started"
-    host: '{{ (ansible_host|default(inventory_hostname))|default(ansible_ssh_host) }}'
+    host: '{{ (ansible_host | default(inventory_hostname)) | default(ansible_ssh_host) }}'
     connect_timeout: "5"
     timeout: "10"
   delegate_to: "localhost"

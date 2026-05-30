@@ -5,7 +5,8 @@
 
 - name: Validate role inputs with argument_specs
   ansible.builtin.validate_argument_spec:
-    argument_spec: "{{ (lookup('ansible.builtin.file', role_path ~ '/meta/argument_specs.yml') | from_yaml).argument_specs.main.options }}"
+    argument_spec: "{{ (lookup('ansible.builtin.file', role_path ~ '/meta/argument_specs.yml') |
+      from_yaml).argument_specs.main.options }}"
     provided_arguments:
       bootstrap_detect_ssh_port: "{{ bootstrap_detect_ssh_port | default(omit) }}"
       bootstrap_fail_on_unknown_pkg_mgr: "{{ bootstrap_fail_on_unknown_pkg_mgr | default(omit) }}"

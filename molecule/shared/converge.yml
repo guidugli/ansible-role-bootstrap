@@ -6,4 +6,4 @@
   vars:
     bootstrap_detect_ssh_port: false
   roles:
-    - role: guidugli.bootstrap
+    - role: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}"

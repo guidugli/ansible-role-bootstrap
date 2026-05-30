@@ -1,7 +1,6 @@
 ---
 # Generated file. Do not edit directly.
 # Source template: meta_main.yml.j2
-# Generated on: 2026-05-27T18:40:48Z
 
 dependencies: []
 
@@ -22,8 +21,7 @@ galaxy_info:
   platforms:
     - name: Fedora
       versions:
-        - "44"
-        - "43"
+        - "all"
     - name: Ubuntu
       versions:
         - "resolute"
