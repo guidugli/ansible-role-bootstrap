@@ -1,14 +1,14 @@
 ---
-# vars file for ansible-role-bootstrap
+# Internal package sets used while Python modules are not yet available.
 _bootstrap_packages:
   dnf5:
     - python3
     - python3-dnf
     - python3-libdnf5
-  dnf: &dnf
+  dnf: &bootstrap_dnf_packages
     - python3
     - python-dnf
-  yum: *dnf
+  yum: *bootstrap_dnf_packages
   apt:
     - python3
     - python3-apt

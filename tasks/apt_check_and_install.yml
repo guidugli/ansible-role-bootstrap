@@ -1,15 +1,18 @@
 ---
-- name: Ensure package {{ package_name }} is installed on apt systems
+- name: Ensure package is installed on apt systems
   ansible.builtin.raw: >-
     /bin/sh -c '
     if dpkg -s {{ package_name }} 2>/dev/null | grep -Fq "Status: install ok installed"; then
-      echo BOOTSTRAP_PRESENT
+      echo BOOTSTRAP_PRESENT;
     else
-      export DEBIAN_FRONTEND=noninteractive
-      apt-get update
-      apt-get install -y --no-install-recommends {{ package_name }}
-      echo BOOTSTRAP_INSTALLED
+      export DEBIAN_FRONTEND=noninteractive;
+      apt-get update;
+      apt-get install -y --no-install-recommends {{ package_name }};
+      echo BOOTSTRAP_INSTALLED;
     fi'
   register: bootstrap_pkg_result
   changed_when: "'BOOTSTRAP_INSTALLED' in bootstrap_pkg_result.stdout"
   failed_when: bootstrap_pkg_result.rc != 0
+  tags:
+    - bootstrap
+    - install

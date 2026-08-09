@@ -1,9 +1,11 @@
 ---
-- name: Converge
+- name: Converge bootstrap role
   hosts: all
   gather_facts: false
-  become: no
   vars:
     bootstrap_detect_ssh_port: false
   roles:
     - role: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}"
+      tags:
+        - bootstrap
+        - install

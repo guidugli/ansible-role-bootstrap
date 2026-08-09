@@ -1,77 +1,89 @@
 ---
-# tasks/main.yml
-# Purpose:
-#   Bootstrap a host so Ansible can manage it using normal Python-based modules.
-
-- name: Validate role inputs with argument_specs
+- name: Validate role inputs
   ansible.builtin.validate_argument_spec:
-    argument_spec: "{{ (lookup('ansible.builtin.file', role_path ~ '/meta/argument_specs.yml') |
-      from_yaml).argument_specs.main.options }}"
+    argument_spec: >-
+      {{ (lookup('ansible.builtin.file', role_path ~ '/meta/argument_specs.yml') |
+          from_yaml).argument_specs.main.options }}
     provided_arguments:
-      bootstrap_detect_ssh_port: "{{ bootstrap_detect_ssh_port | default(omit) }}"
-      bootstrap_fail_on_unknown_pkg_mgr: "{{ bootstrap_fail_on_unknown_pkg_mgr | default(omit) }}"
-      bootstrap_extra_packages: "{{ bootstrap_extra_packages | default(omit) }}"
+      bootstrap_detect_ssh_port: "{{ bootstrap_detect_ssh_port }}"
+      bootstrap_fail_on_unknown_pkg_mgr: "{{ bootstrap_fail_on_unknown_pkg_mgr }}"
+      bootstrap_extra_packages: "{{ bootstrap_extra_packages }}"
+  tags:
+    - bootstrap
+    - validate
 
-- name: Run extra assertion checks
+- name: Run additional input validation
   ansible.builtin.import_tasks: assert.yml
+  tags:
+    - bootstrap
+    - validate
 
-- name: Run tasks to detect SSH port
+- name: Detect the reachable SSH port
   ansible.builtin.include_tasks: detect_sshd_port.yml
   when:
-    - bootstrap_detect_ssh_port | default(true)
+    - bootstrap_detect_ssh_port
     - ansible_connection | default('ssh') in ['ssh', 'paramiko']
+  tags:
+    - bootstrap
+    - config
 
-- name: Detect package manager
+- name: Detect the package manager without Python
   ansible.builtin.raw: >-
-    bash --noprofile --norc -c '
-    if command -v dnf5 >/dev/null 2>&1; then
-      echo dnf5
-    elif command -v dnf >/dev/null 2>&1; then
-      echo dnf
-    elif command -v yum >/dev/null 2>&1; then
-      echo yum
-    elif command -v apt-get >/dev/null 2>&1; then
-      echo apt
-    elif command -v zypper >/dev/null 2>&1; then
-      echo zypper
-    else
-      echo unknown
-    fi'
-  register: pkg_mgr_check
+    /bin/sh -c '
+    if command -v dnf5 >/dev/null 2>&1; then echo dnf5;
+    elif command -v dnf >/dev/null 2>&1; then echo dnf;
+    elif command -v yum >/dev/null 2>&1; then echo yum;
+    elif command -v apt-get >/dev/null 2>&1; then echo apt;
+    else echo unknown; fi'
+  register: bootstrap_pkg_mgr_check
   changed_when: false
+  tags:
+    - bootstrap
+    - validate
 
-- name: Save package manager
+- name: Store the detected package manager
   ansible.builtin.set_fact:
-    bootstrap_pkg_mgr: "{{ pkg_mgr_check.stdout | trim }}"
+    bootstrap_pkg_mgr: "{{ bootstrap_pkg_mgr_check.stdout | trim }}"
+  tags:
+    - bootstrap
+    - config
 
-- name: Show package manager name
-  ansible.builtin.debug:
-    msg: "Package manager name: {{ bootstrap_pkg_mgr }}"
-
-- name: Fail on unsupported package manager
+- name: Fail on an unsupported package manager
   ansible.builtin.fail:
     msg: "Unsupported package manager detected by bootstrap role: {{ bootstrap_pkg_mgr }}"
   when:
-    - bootstrap_fail_on_unknown_pkg_mgr | default(true)
+    - bootstrap_fail_on_unknown_pkg_mgr
     - bootstrap_pkg_mgr not in _bootstrap_packages
+  tags:
+    - bootstrap
+    - validate
 
-- name: Build final bootstrap package list
+- name: Build the deterministic bootstrap package list
   ansible.builtin.set_fact:
     bootstrap_packages_final: >-
-      {{ (_bootstrap_packages.get(bootstrap_pkg_mgr, []) + (bootstrap_extra_packages | default([]))) | unique }}
+      {{ (_bootstrap_packages.get(bootstrap_pkg_mgr, []) + bootstrap_extra_packages) | unique | list }}
   when: bootstrap_pkg_mgr in _bootstrap_packages
+  tags:
+    - bootstrap
+    - config
 
-- name: Install bootstrap packages for detected backend
+- name: Install bootstrap packages for the detected backend
   ansible.builtin.include_tasks: "{{ bootstrap_pkg_mgr }}_check_and_install.yml"
   loop: "{{ bootstrap_packages_final | default([]) }}"
   loop_control:
     loop_var: package_name
   when:
     - bootstrap_pkg_mgr in _bootstrap_packages
-    - (bootstrap_packages_final | default([])) | length > 0
+    - bootstrap_packages_final | default([]) | length > 0
+  tags:
+    - bootstrap
+    - install
 
-- name: Reset connection to use installed Python
+- name: Reset the SSH connection to use installed Python
   ansible.builtin.meta: reset_connection
   when:
     - bootstrap_pkg_mgr in _bootstrap_packages
     - ansible_connection | default('ssh') in ['ssh', 'paramiko']
+  tags:
+    - bootstrap
+    - config
