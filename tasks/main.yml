@@ -30,11 +30,13 @@
 - name: Detect the package manager without Python
   ansible.builtin.raw: >-
     /bin/sh -c '
-    if command -v dnf5 >/dev/null 2>&1; then echo dnf5;
-    elif command -v dnf >/dev/null 2>&1; then echo dnf;
-    elif command -v yum >/dev/null 2>&1; then echo yum;
-    elif command -v apt-get >/dev/null 2>&1; then echo apt;
-    else echo unknown; fi'
+    TERM=dumb;
+    export TERM;
+    if command -v dnf5 >/dev/null 2>&1; then printf "%s\n" dnf5;
+    elif command -v dnf >/dev/null 2>&1; then printf "%s\n" dnf;
+    elif command -v yum >/dev/null 2>&1; then printf "%s\n" yum;
+    elif command -v apt-get >/dev/null 2>&1; then printf "%s\n" apt;
+    else printf "%s\n" unknown; fi'
   register: bootstrap_pkg_mgr_check
   changed_when: false
   tags:
@@ -43,7 +45,12 @@
 
 - name: Store the detected package manager
   ansible.builtin.set_fact:
-    bootstrap_pkg_mgr: "{{ bootstrap_pkg_mgr_check.stdout | trim }}"
+    bootstrap_pkg_mgr: >-
+      {{
+        bootstrap_pkg_mgr_check.stdout
+        | regex_search('^(dnf5|dnf|yum|apt|unknown)')
+        | default('unknown', true)
+      }}
   tags:
     - bootstrap
     - config

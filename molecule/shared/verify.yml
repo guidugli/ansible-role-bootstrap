@@ -61,3 +61,63 @@
       tags:
         - bootstrap
         - validate
+
+    - name: Simulate package-manager output with an OSC 3008 suffix
+      ansible.builtin.set_fact:
+        bootstrap_test_pkg_mgr_output: "dnf5\r\n\u001b]3008;end=test-context\u001b\\"
+      tags:
+        - bootstrap
+        - validate
+
+    - name: Parse the simulated package-manager output
+      ansible.builtin.set_fact:
+        bootstrap_test_pkg_mgr: >-
+          {{
+            bootstrap_test_pkg_mgr_output
+            | regex_search('^(dnf5|dnf|yum|apt|unknown)')
+            | default('unknown', true)
+          }}
+      tags:
+        - bootstrap
+        - validate
+
+    - name: Assert OSC-contaminated output is parsed correctly
+      ansible.builtin.assert:
+        that:
+          - bootstrap_test_pkg_mgr == 'dnf5'
+        fail_msg: >-
+          Package-manager detection did not tolerate an OSC terminal context suffix.
+        quiet: true
+      tags:
+        - bootstrap
+        - validate
+
+    - name: Verify package-manager parsing with terminal output contamination
+      vars:
+        bootstrap_pkg_mgr_test_cases:
+          - input: "dnf5\r\n\u001b]3008;end=test-context\u001b\\"
+            expected: dnf5
+          - input: "dnf\r\n\u001b]3008;end=test-context\u001b\\"
+            expected: dnf
+          - input: "yum\r\n\u001b]3008;end=test-context\u001b\\"
+            expected: yum
+          - input: "apt\r\n\u001b]3008;end=test-context\u001b\\"
+            expected: apt
+      ansible.builtin.assert:
+        that:
+          - >-
+            (
+              item.input
+              | regex_search('^(dnf5|dnf|yum|apt|unknown)')
+              | default('unknown', true)
+            ) == item.expected
+        fail_msg: >-
+          Package-manager parser returned an unexpected value for
+          {{ item.expected }}.
+        quiet: true
+      loop: "{{ bootstrap_pkg_mgr_test_cases }}"
+      loop_control:
+        label: "{{ item.expected }}"
+      tags:
+        - bootstrap
+        - validate
