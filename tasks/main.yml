@@ -30,6 +30,7 @@
 - name: Detect the package manager without Python
   ansible.builtin.raw: >-
     /bin/sh -c '
+    unset PS0 PROMPT_COMMAND;
     TERM=dumb;
     export TERM;
     if command -v dnf5 >/dev/null 2>&1; then printf "%s\n" dnf5;
