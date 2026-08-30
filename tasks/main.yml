@@ -33,13 +33,14 @@
     unset PS0 PROMPT_COMMAND;
     TERM=dumb;
     export TERM;
-    if command -v dnf5 >/dev/null 2>&1; then printf "%s\n" dnf5;
-    elif command -v dnf >/dev/null 2>&1; then printf "%s\n" dnf;
-    elif command -v yum >/dev/null 2>&1; then printf "%s\n" yum;
-    elif command -v apt-get >/dev/null 2>&1; then printf "%s\n" apt;
-    else printf "%s\n" unknown; fi'
+    if command -v dnf5 >/dev/null 2>&1; then exit 10;
+    elif command -v dnf >/dev/null 2>&1; then exit 11;
+    elif command -v yum >/dev/null 2>&1; then exit 12;
+    elif command -v apt-get >/dev/null 2>&1; then exit 13;
+    else exit 14; fi'
   register: bootstrap_pkg_mgr_check
   changed_when: false
+  failed_when: bootstrap_pkg_mgr_check.rc not in _bootstrap_pkg_mgr_by_rc
   tags:
     - bootstrap
     - validate
@@ -48,9 +49,9 @@
   ansible.builtin.set_fact:
     bootstrap_pkg_mgr: >-
       {{
-        bootstrap_pkg_mgr_check.stdout
-        | regex_search('^(dnf5|dnf|yum|apt|unknown)')
-        | default('unknown', true)
+        _bootstrap_pkg_mgr_by_rc[
+         bootstrap_pkg_mgr_check.rc | int
+        ]
       }}
   tags:
     - bootstrap

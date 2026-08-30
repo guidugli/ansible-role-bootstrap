@@ -12,3 +12,10 @@ _bootstrap_packages:
   apt:
     - python3
     - python3-apt
+
+_bootstrap_pkg_mgr_by_rc:
+  10: dnf5
+  11: dnf
+  12: yum
+  13: apt
+  14: unknown
